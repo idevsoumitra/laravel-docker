@@ -1,7 +1,6 @@
-# Dockerfile
 FROM php:8.2-fpm-alpine
 
-# Update the package index and install dependencies
+# Update and install dependencies with virtual packages
 RUN apk update && apk add --no-cache \
     curl \
     libpng-dev \
@@ -17,20 +16,24 @@ RUN apk update && apk add --no-cache \
     mysql-client \
     libxml2-dev
 
-# Install Composer
+# Install extensions manually if needed (e.g., gd for image processing)
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg && \
+    docker-php-ext-install gd mysqli pdo pdo_mysql zip
+
+# Copy Composer from official image
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Set working directory
+# Set the working directory
 WORKDIR /var/www/html
 
-# Copy application files
+# Copy project files to the container
 COPY . .
 
-# Install PHP dependencies
+# Install project dependencies via Composer
 RUN composer install --optimize-autoloader --no-dev
 
-# Expose port 8000
+# Expose the port Laravel will run on
 EXPOSE 8000
 
-# Start Laravel server
+# Start the Laravel application
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
