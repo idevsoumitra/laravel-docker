@@ -1,6 +1,7 @@
+# Dockerfile
 FROM php:8.2-fpm-alpine
 
-# Update and install dependencies with virtual packages
+# Update and install dependencies
 RUN apk update && apk add --no-cache \
     curl \
     libpng-dev \
@@ -16,7 +17,7 @@ RUN apk update && apk add --no-cache \
     mysql-client \
     libxml2-dev
 
-# Install extensions manually if needed (e.g., gd for image processing)
+# Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg && \
     docker-php-ext-install gd mysqli pdo pdo_mysql zip
 
@@ -26,14 +27,14 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 # Set the working directory
 WORKDIR /var/www/html
 
-# Copy project files to the container
+# Copy application files
 COPY . .
 
-# Install project dependencies via Composer
+# Install Laravel dependencies
 RUN composer install --optimize-autoloader --no-dev
 
-# Expose the port Laravel will run on
-EXPOSE 8000
+# Expose port 8080 (required by Google Cloud Run)
+EXPOSE 8080
 
-# Start the Laravel application
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+# Change CMD to listen on port 8080
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8080"]
