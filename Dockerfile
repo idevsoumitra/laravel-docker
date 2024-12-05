@@ -1,20 +1,21 @@
 # Dockerfile
 FROM php:8.2-fpm-alpine
 
-# Install dependencies
-RUN apk add --no-cache \
+# Update the package index and install dependencies
+RUN apk update && apk add --no-cache \
     curl \
     libpng-dev \
     libjpeg-turbo-dev \
     libwebp-dev \
     libxpm-dev \
-    libfreetype-dev \
+    freetype-dev \
     libzip-dev \
     zip \
     unzip \
     git \
     bash \
-    mysql-client
+    mysql-client \
+    libxml2-dev
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -25,11 +26,11 @@ WORKDIR /var/www/html
 # Copy application files
 COPY . .
 
-# Install application dependencies
+# Install PHP dependencies
 RUN composer install --optimize-autoloader --no-dev
 
 # Expose port 8000
 EXPOSE 8000
 
 # Start Laravel server
-CMD php artisan serve --host=0.0.0.0 --port=8000
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
