@@ -1,40 +1,47 @@
-# Dockerfile
-FROM php:8.2-fpm-alpine
+# Base image for PHP
+FROM php:8.2-fpm
 
-# Update and install dependencies
-RUN apk update && apk add --no-cache \
-    curl \
-    libpng-dev \
-    libjpeg-turbo-dev \
-    libwebp-dev \
-    libxpm-dev \
-    freetype-dev \
-    libzip-dev \
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    nginx \
     zip \
     unzip \
     git \
-    bash \
-    mysql-client \
-    libxml2-dev
+    curl \
+    libpng-dev \
+    libjpeg-dev \
+    libwebp-dev \
+    libxpm-dev \
+    libfreetype6-dev \
+    libzip-dev \
+    libxml2-dev \
+    mysql-client && \
+    docker-php-ext-configure gd --with-freetype --with-jpeg && \
+    docker-php-ext-install gd mysqli pdo pdo_mysql zip && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install PHP extensions
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg && \
-    docker-php-ext-install gd mysqli pdo pdo_mysql zip
-
-# Copy Composer from official image
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-
-# Set the working directory
+# Set working directory
 WORKDIR /var/www/html
 
-# Copy application files
+# Copy Laravel application
 COPY . .
+
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Install Laravel dependencies
 RUN composer install --optimize-autoloader --no-dev
 
-# Expose port 8080 (required by Google Cloud Run)
+# Set correct permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage \
+    && chmod -R 755 /var/www/html/bootstrap/cache
+
+# Copy NGINX configuration
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Expose the port Cloud Run will use
 EXPOSE 8080
 
-# Change CMD to listen on port 8080
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8080"]
+# Start NGINX and PHP-FPM
+CMD service php8.2-fpm start && nginx -g 'daemon off;'
