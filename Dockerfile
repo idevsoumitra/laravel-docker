@@ -15,10 +15,11 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libzip-dev \
     libxml2-dev \
-    mysql-client && \
-    docker-php-ext-configure gd --with-freetype --with-jpeg && \
-    docker-php-ext-install gd mysqli pdo pdo_mysql zip && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+    mysql-client
+
+# Install PHP extensions
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg && \
+    docker-php-ext-install gd mysqli pdo pdo_mysql zip
 
 # Set working directory
 WORKDIR /var/www/html
