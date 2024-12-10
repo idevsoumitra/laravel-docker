@@ -7,6 +7,6 @@ Route::get('/', function () {
 });
 
 Route::get('/migrate', function () {
-    \Illuminate\Support\Facades\Artisan::call('migrate --force');
+    \Illuminate\Support\Facades\Artisan::call('migrate:refresh --force');
     return response()->json(['message' => 'Migrations run successfully!']);
 });
