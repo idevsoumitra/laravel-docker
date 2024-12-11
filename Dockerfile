@@ -1,4 +1,4 @@
-# Dockerfile
+# Base image for PHP
 FROM php:8.2-fpm-alpine
 
 # Update and install dependencies
@@ -15,7 +15,8 @@ RUN apk update && apk add --no-cache \
     git \
     bash \
     mysql-client \
-    libxml2-dev
+    libxml2-dev \
+    nginx # Install Nginx
 
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg && \
@@ -33,8 +34,11 @@ COPY . .
 # Install Laravel dependencies
 RUN composer install --optimize-autoloader --no-dev
 
-# Expose port 8080 (required by Google Cloud Run)
+# Copy Nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Expose port 8080 (used by Google Cloud Run)
 EXPOSE 8080
 
-# Change CMD to listen on port 8080
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8080"]
+# Start Nginx and PHP-FPM
+CMD ["sh", "-c", "php-fpm & nginx -g 'daemon off;'"]
