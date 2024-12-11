@@ -22,7 +22,7 @@ RUN apk update && apk add --no-cache \
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg && \
     docker-php-ext-install gd mysqli pdo pdo_mysql zip
 
-# Copy Composer from official image
+# Copy Composer from the official image
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Set the working directory
@@ -34,11 +34,19 @@ COPY . .
 # Install Laravel dependencies
 RUN composer install --optimize-autoloader --no-dev
 
+# Set proper permissions for Laravel directories
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache && \
+    chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
 # Copy Nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
 # Expose port 8080 (used by Google Cloud Run)
 EXPOSE 8080
 
-# Start Nginx and PHP-FPM
-CMD ["sh", "-c", "php-fpm & nginx -g 'daemon off;'"]
+# Entrypoint script to handle permissions and start services
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Start the entrypoint script
+ENTRYPOINT ["/entrypoint.sh"]
